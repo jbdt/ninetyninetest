@@ -1,0 +1,47 @@
+== NOTAS
+
+Después de leer el enunciado detenidamente, decidí plantear el proyecto en tres partes. Recoger datos, procesar datos y devolver datos. Todo ello almacenado en base de datos.
+
+Para la recogida, he utilizado la gema 'whenever', para dejar una tarea programada en el servidor utilizando el gestor 'cron' de Unix. Este gestor permite como mínimo, actualizaciones cada minuto, y nosotros queríamos al menos cada veinte segundos. Valoré la opción de gestionar hilos asíncronos con Active Job o Sidekiq, pero me pareció demasiado. Hice una llamada cada minuto que invocaba la misma tarea tres veces, pero pasando por parámetro los segundos que debía permanecer la tarea dormida. De esta manera, pasando [0,20,40], se ejecutaría cada 20 segundos. Se puede ver en el archivo 'config/schedule.rb'.
+La tarea que ejecuta está en 'lib/tasks/autotask.rake'. La cual hace dos cosas: primero actualiza las empresas existentes, y después toma los valores actuales de las acciones. En 'models/concerns/api_connection.rb' hay un método estático para realizar las llamadas contra vuestra API utilizando las librerías 'Net::HTTP'. He parametrizado la cantidad de reintentos en caso de que las llamadas fallen, en el archivo de configuración 'config/settings.yml'. El acceso a los datos de este fichero de configuración, se hacen mediante llamadas invocando a la clase 'Settings' declarada en el inicializador 'config/initializers/config.rb'. Los valores de las empresas se guardan como objetos 'ActualSharePrice'.
+
+Cada vez que se crea un objeto 'ActualSharePrice', se comprueba si ha sido creado en la misma hora que el último. En caso contrario, se procesan todos los objetos 'ActualSharePrice' por cada empresa para generar los 'HourSharePrice'. Estos últimos, son la unidad mínima de almacenaje de precios de acción que he establecido basándome en el enunciado, conteniendo la media de todos esos valores durante esa hora. Una vez generados, se eliminan los objetos 'ActualSharePrice' que han sido procesados.
+
+Por último, hay una API en 'controllers/api/v1/' con dos controladores. El controlador 'company_controller.rb' permite listar las compañías o ver la información de una de ellas en detalle. He respetado los mismos campos que vuestras llamadas para las respuestas:
+    - GET Listado de empresas: /api/v1/company
+    - GET Información de empresa por ID: /api/v1/company/{companyId}
+El controlador 'time_series_controller.rb' permite ver el histórico de valores de las acciones de las compañías. Como pedíais, soporta filtro por horas, días o semanas:
+    - GET Series de tiempo: /api/v1/time_series
+    - GET Series de tiempo de empresa por ID: /api/v1/time_series/{companyId}
+Los parámetros a pasar son:
+    - interval: Marca la periocidad. Puede ser 'hourly', 'daily' o 'weekly'. Por defecto y en caso de pasar un parámetro diferente a los mencionados, devuelve por horas.
+    - since: Indica desde cuándo quieres ver los precios. Por defecto o en caso de valor inválido, se establece una semana antes de la petición en curso.
+    - till: Indica hasta cuándo quieres ver los precios. Por defecto o en caso de valor inválido, se establece la fecha actual de la petición en curso.
+El intervalo solicitado por semanas, devuelve la semana del año a la que corresponde junto al año en sí, quedando el formato así:  "#{week}/#{year}".
+Los valores de fecha soportados son los de la clase 'DateTime' de Rails, por ejemplo: '1/1/2019'.
+
+El proyecto se ha desarrollado con la versión 5.2.2 de Rails y la versión 2.5.3 de Ruby.
+
+Todas los valores de las entradas y salidas de llamadas APIs han sido parametrizadas en 'config/settings.yml'.
+
+Para agilizar el desarrollo de la prueba, no he implementado ningún sistema de despliegue ni tests.
+
+La base de datos está en MySQL. El fichero 'config/database.yml' está fuera de repositorio. Pero adjunto uno de ejemplo en la misma carpeta.
+
+Siguiendo el ejemplo de vuestra API, el fichero 'config/routes.rb' ha sido modificado para que, en caso de intentar acceder a cualquier ruta no permitida, solicite una autenticación básica http, la cual se puede ver en 'controllers/application_controller.rb'.
+
+Podría haber hecho un único objeto 'SharePrice', con diferentes roles o estados para indicar si eran actuales o ya de tipo hora, pero decidí hacerlo así por si luego se añadían nuevos atributos estadísticos a los objetos 'HourSharePrice' más allá de la media.
+
+He dejado en la semilla 'db/seeds.rb' una tarea que rellena con datos simulados desde hace un mes, para ver cómo se vería el proyecto con datos reales.
+
+He alojado el proyecto en una máquina mía de OVH, lo he dejado corriendo con Nginx, la dirección es vps643212.ovh.net:8080.
+
+Dejo algunas llamadas de ejemplo:
+http://vps643212.ovh.net:8080/api/v1/company
+http://vps643212.ovh.net:8080/api/v1/company/1
+http://vps643212.ovh.net:8080/api/v1/time_series
+http://vps643212.ovh.net:8080/api/v1/time_series/1
+http://vps643212.ovh.net:8080/api/v1/time_series/1?since=19-2-2019
+http://vps643212.ovh.net:8080/api/v1/time_series/1?since=14-2-2019&interval=daily
+
+Me lo he pasado bien desarrollando esta prueba ^^

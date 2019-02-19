@@ -1,0 +1,41 @@
+development:
+  :api_connection:
+    :call_api_retries: 2
+    :testapi: https://dev.ninetynine.com/testapi/1/companies/
+    :id: id
+    :name: name
+    :ric: ric
+    :description: description
+    :country: country
+    :share_price: sharePrice
+  :api_response:
+    :id: id
+    :name: name
+    :ric: ric
+    :description: description
+    :country: country
+    :share_price: sharePrice
+  :time_series:
+    :since_default: 7
+    :till_default: 0
+
+production:
+  :api_connection:
+    :call_api_retries: 2
+    :testapi: https://dev.ninetynine.com/testapi/1/companies/
+    :id: id
+    :name: name
+    :ric: ric
+    :description: description
+    :country: country
+    :share_price: sharePrice
+  :api_response:
+    :id: id
+    :name: name
+    :ric: ric
+    :description: description
+    :country: country
+    :share_price: sharePrice
+  :time_series:
+    :since_default: 7
+    :till_default: 0

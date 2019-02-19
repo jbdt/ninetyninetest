@@ -1,0 +1,19 @@
+development:
+  adapter: mysql2
+  encoding: utf8
+  reconnect: false
+  database: ninetyninetest_development
+  pool: 5
+  username:
+  password:
+  host: localhost
+
+production:
+  adapter: mysql2
+  encoding: utf8
+  reconnect: false
+  database: ninetyninetest_production
+  pool: 5
+  username:
+  password:
+  host: localhost
